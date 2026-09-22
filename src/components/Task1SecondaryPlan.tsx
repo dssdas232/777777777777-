@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Plus,
   Trash2,
@@ -9,6 +9,9 @@ import {
   Clock,
   Scale,
   Package,
+  FileSpreadsheet,
+  Upload,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   Language,
@@ -22,6 +25,7 @@ import {
   calculateSecondaryTotals,
 } from '../services/plannerEngine';
 import { eventBus } from '../services/eventBus';
+import { excelService } from '../services/excelService';
 
 interface Task1SecondaryPlanProps {
   language: Language;
@@ -41,6 +45,33 @@ export const Task1SecondaryPlan: React.FC<Task1SecondaryPlanProps> = ({
   const isAr = language === 'ar';
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const res = await excelService.parseExcelFile(file, constants);
+    if (res.success && res.items.length > 0) {
+      onUpdatePlan(res.items);
+      setImportStatus(
+        isAr
+          ? `✅ تم بنجاح استيراد ${res.items.length} صنفاً (${res.summary.totalMio.toLocaleString()} مليون سيجارة) وعكس الخطة على المصنع!`
+          : `✅ Successfully imported ${res.items.length} SKUs (${res.summary.totalMio.toLocaleString()} Mio sticks) and reflected to factory!`
+      );
+      setTimeout(() => setImportStatus(null), 6000);
+      eventBus.addEventLog({
+        source: 'Task 1: Secondary Plan',
+        eventType: 'USER_ACTION',
+        message: `Imported ${res.items.length} SKUs from ${file.name}.`,
+        status: 'success',
+      });
+    } else {
+      alert(res.error || 'تعذر استيراد ملف الإكسل');
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const [newSku, setNewSku] = useState<Partial<SecondaryPlanItem>>({
     skuCode: `SKU-00${planItems.length + 1}`,
     skuName: '',
@@ -204,7 +235,46 @@ export const Task1SecondaryPlan: React.FC<Task1SecondaryPlanProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Hidden File Input for Excel Import */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx, .xls, .csv"
+            className="hidden"
+            onChange={handleExcelImport}
+          />
+
+          <button
+            id="import-secondary-excel-btn"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-sm"
+            title={isAr ? 'استيراد وعكس خطة من ملف إكسل' : 'Import and reflect plan from Excel'}
+          >
+            <Upload className="w-4 h-4" />
+            <span>{isAr ? 'استيراد إكسل 📊' : 'Import Excel 📊'}</span>
+          </button>
+
+          <button
+            id="export-secondary-excel-btn"
+            onClick={() => excelService.exportPlan(planItems, constants)}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-teal-700 hover:bg-teal-600 text-white transition-colors border border-teal-600 shadow-sm"
+            title={isAr ? 'تصدير الخطة الحالية إلى ملف إكسل (.xlsx)' : 'Export active plan to Excel (.xlsx)'}
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>{isAr ? 'تصدير إكسل' : 'Export Excel'}</span>
+          </button>
+
+          <button
+            id="download-template-excel-btn"
+            onClick={() => excelService.downloadTemplate()}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors border border-slate-600"
+            title={isAr ? 'تحميل نموذج إكسل قياسي فارغ' : 'Download blank Excel template'}
+          >
+            <Download className="w-4 h-4" />
+            <span>{isAr ? 'نموذج إكسل' : 'Template'}</span>
+          </button>
+
           <button
             id="add-sku-btn"
             onClick={() => setIsAddModalOpen(true)}
@@ -213,17 +283,24 @@ export const Task1SecondaryPlan: React.FC<Task1SecondaryPlanProps> = ({
             <Plus className="w-4 h-4" />
             <span>{isAr ? 'إضافة منتج (SKU)' : 'Add SKU'}</span>
           </button>
-
-          <button
-            id="export-secondary-csv-btn"
-            onClick={exportToCSV}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors border border-slate-600"
-          >
-            <Download className="w-4 h-4" />
-            <span>{isAr ? 'تصدير CSV' : 'Export CSV'}</span>
-          </button>
         </div>
       </div>
+
+      {/* Excel Import Success Notice */}
+      {importStatus && (
+        <div className="p-3 bg-emerald-950/80 border border-emerald-500/50 rounded-xl text-xs text-emerald-300 flex items-center justify-between animate-fade-in shadow-md">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <span className="font-semibold">{importStatus}</span>
+          </div>
+          <button
+            onClick={() => setImportStatus(null)}
+            className="text-emerald-400 hover:text-white text-xs px-2 py-1 rounded bg-emerald-900/60"
+          >
+            {isAr ? 'إغلاق' : 'Dismiss'}
+          </button>
+        </div>
+      )}
 
       {/* KPI Cards Strip */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">

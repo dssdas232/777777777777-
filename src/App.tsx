@@ -12,6 +12,7 @@ import { Task9A2AHub } from './components/Task9A2AHub';
 import { Task10ArchitectureDashboard } from './components/Task10ArchitectureDashboard';
 import { Task11ChatAssistant } from './components/Task11ChatAssistant';
 import { MainDashboard } from './components/MainDashboard';
+import { VoiceConversationModal } from './components/VoiceConversationModal';
 
 import {
   Language,
@@ -37,6 +38,7 @@ export default function App() {
   const [language, setLanguage] = useState<Language>('ar');
   const [activeTab, setActiveTab] = useState<ActiveTab>('main');
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+  const [isVoiceOpen, setIsVoiceOpen] = useState<boolean>(false);
 
   // Core state loaded from persistence layer
   const [constants, setConstants] = useState<FactoryConstants>(storageService.getConstants());
@@ -205,6 +207,8 @@ export default function App() {
         onLanguageChange={setLanguage}
         onTabChange={setActiveTab}
         onResetDefaults={handleResetToDefaults}
+        onOpenVoiceConversation={() => setIsVoiceOpen(true)}
+        onOpenChatAssistant={() => setIsChatOpen(true)}
       />
 
       {/* Main Container */}
@@ -217,7 +221,10 @@ export default function App() {
             productionLines={lines}
             constants={constants}
             blendComponents={blendComponents}
+            actualRecords={actualRecords}
             onNavigateTab={setActiveTab}
+            onOpenVoiceConversation={() => setIsVoiceOpen(true)}
+            onOpenChatAssistant={() => setIsChatOpen(true)}
           />
         )}
 
@@ -315,16 +322,56 @@ export default function App() {
         {activeTab === 'task9' && <Task9A2AHub language={language} />}
 
         {activeTab === 'task10' && <Task10ArchitectureDashboard language={language} />}
+
+        {activeTab === 'task11' && (
+          <Task11ChatAssistant
+            language={language}
+            planItems={planItems}
+            constants={constants}
+            blendComponents={blendComponents}
+            lines={lines}
+            actualRecords={actualRecords}
+            isOpen={true}
+            isFullScreenMode={true}
+            onToggleOpen={() => {}}
+            onApplyPlanUpdate={handleUpdatePlanItems}
+            onUpdateConstants={handleUpdateConstants}
+            onUpdateLines={handleUpdateLines}
+            onUpdateBlendComponents={handleUpdateBlendComponents}
+            onNavigateTab={(tab) => setActiveTab(tab)}
+            onAddActualRecord={handleAddActualRecord}
+            onResetDefaults={handleResetToDefaults}
+          />
+        )}
       </main>
 
-      {/* Floating Chat Assistant Widget (Task 11) */}
-      <Task11ChatAssistant
+      {/* Floating Chat Assistant Widget (Task 11) when not in Task 11 full screen tab */}
+      {activeTab !== 'task11' && (
+        <Task11ChatAssistant
+          language={language}
+          planItems={planItems}
+          constants={constants}
+          blendComponents={blendComponents}
+          lines={lines}
+          actualRecords={actualRecords}
+          isOpen={isChatOpen}
+          isFullScreenMode={false}
+          onToggleOpen={() => setIsChatOpen(!isChatOpen)}
+          onApplyPlanUpdate={handleUpdatePlanItems}
+          onUpdateConstants={handleUpdateConstants}
+          onUpdateLines={handleUpdateLines}
+          onUpdateBlendComponents={handleUpdateBlendComponents}
+          onNavigateTab={(tab) => setActiveTab(tab)}
+          onAddActualRecord={handleAddActualRecord}
+          onResetDefaults={handleResetToDefaults}
+        />
+      )}
+
+      {/* Real-Time Voice Conversation Modal (gemini-3.8-live) */}
+      <VoiceConversationModal
+        isOpen={isVoiceOpen}
+        onClose={() => setIsVoiceOpen(false)}
         language={language}
-        planItems={planItems}
-        constants={constants}
-        blendComponents={blendComponents}
-        isOpen={isChatOpen}
-        onToggleOpen={() => setIsChatOpen(!isChatOpen)}
       />
 
       {/* Persistent Factory Status Bar */}

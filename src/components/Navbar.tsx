@@ -15,6 +15,7 @@ import {
   Bot,
   RotateCcw,
   LayoutDashboard,
+  Mic,
 } from 'lucide-react';
 import { Language, ActiveTab } from '../types';
 
@@ -25,6 +26,8 @@ interface NavbarProps {
   onTabChange: (tab: ActiveTab) => void;
   onOpenSettings?: () => void;
   onResetDefaults?: () => void;
+  onOpenVoiceConversation?: () => void;
+  onOpenChatAssistant?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -33,6 +36,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   onTabChange,
   onResetDefaults,
+  onOpenVoiceConversation,
+  onOpenChatAssistant,
 }) => {
   const isAr = language === 'ar';
 
@@ -48,6 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'task8', nameAr: 'التعلّم التكيفي', nameEn: '8. Adaptive', icon: BrainCircuit },
     { id: 'task9', nameAr: 'بروتوكول A2A', nameEn: '9. A2A Hub', icon: Network },
     { id: 'task10', nameAr: 'لوحة المعمارية', nameEn: '10. Architecture', icon: Cpu },
+    { id: 'task11', nameAr: 'المساعد والوكيل التنفيذي', nameEn: '11. AI Agent', icon: Bot },
   ];
 
   return (
@@ -85,6 +91,42 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Activity className="w-3.5 h-3.5 text-amber-400 mr-1.5 rtl:mr-0 rtl:ml-1.5" />
               <span>JSON-RPC 2.0 • Port 3000</span>
             </div>
+
+            {/* Smart Assistant & Excel Button */}
+            {onOpenChatAssistant && (
+              <button
+                id="navbar-open-assistant-btn"
+                onClick={onOpenChatAssistant}
+                className="px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 transition-all flex items-center gap-1.5 shadow-sm group"
+                title={isAr ? 'فتح المساعد الذكي لتخطيط الإنتاج وقراءة ملفات الإكسل' : 'Open AI Production Assistant & Excel Reader'}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">
+                  {isAr ? 'المساعد الذكي (إكسل)' : 'AI Planner (Excel)'}
+                </span>
+              </button>
+            )}
+
+            {/* Live Voice Conversation Button */}
+            {onOpenVoiceConversation && (
+              <button
+                id="voice-conversation-open-btn"
+                onClick={onOpenVoiceConversation}
+                className="px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/40 text-amber-300 transition-all flex items-center gap-1.5 shadow-sm group"
+                title={isAr ? 'بدء محادثة صوتية مباشرة مع gemini-3.8-live' : 'Start real-time voice conversation with gemini-3.8-live'}
+              >
+                <div className="relative flex items-center justify-center">
+                  <Mic className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
+                </div>
+                <span className="hidden sm:inline">
+                  {isAr ? 'محادثة صوتية Live' : 'Voice Live'}
+                </span>
+                <span className="text-[10px] px-1 py-0.2 rounded bg-amber-400/20 text-amber-300 font-mono hidden md:inline">
+                  3.8-live
+                </span>
+              </button>
+            )}
 
             {/* Restore Factory Baselines Button */}
             {onResetDefaults && (
